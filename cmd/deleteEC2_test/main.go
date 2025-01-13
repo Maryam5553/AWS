@@ -110,7 +110,7 @@ func main() {
 	fmt.Println("5- Delete all instances on the account")
 	fmt.Println("6- Exit program")
 
-	// get user input
+	// ask user which operation they want to perform
 	for {
 		fmt.Print("\n> Enter a number: ")
 
