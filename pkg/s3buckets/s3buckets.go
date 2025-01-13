@@ -3,6 +3,7 @@ package s3buckets
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -62,8 +63,6 @@ func ListBuckets(s3client *s3.Client) error {
 
 	if nbRequest == 1 && nbBuckets == 0 {
 		fmt.Println("No bucket owned.")
-	} else {
-		fmt.Println("Done listing buckets.")
 	}
 	return nil
 }
@@ -75,7 +74,7 @@ func ListObjectsInBucket(s3client *s3.Client, bucketName string) error {
 	if !bucketExists {
 		return fmt.Errorf("bucket \"%s\" doesn't exist", bucketName)
 	}
-	fmt.Printf("%s:\n", bucketName)
+	fmt.Printf("-%s\n", bucketName)
 
 	// ListObjectsV2 can return at maximum 1000 results.
 	// We use the paginator to make all the necessary list object request
@@ -99,12 +98,59 @@ func ListObjectsInBucket(s3client *s3.Client, bucketName string) error {
 
 		// Print objects
 		for _, object := range page.Contents {
-			fmt.Printf(" -%s\n", *object.Key)
+			fmt.Printf(" \u2514 %s\n", *object.Key)
 		}
 	}
 
 	if nbRequest == 1 && nbObjects == 0 {
 		fmt.Println(" (empty)")
+	}
+	return nil
+}
+
+// Print all objects from all buckets of the account.
+func ListAllObjects(s3client *s3.Client) error {
+	// fetch all buckets with pagination (see function ListBucets).
+	// we'll then fetch the objects gradually for each bucket.
+
+	maxBuckets := 1000
+	moreBuckets := true
+	nbRequest, nbBuckets := 0, 0
+	lastContinuationToken := ""
+	for moreBuckets {
+		// make list buckets request
+		listBucketsInput := s3.ListBucketsInput{
+			MaxBuckets:        aws.Int32(int32(maxBuckets)),
+			ContinuationToken: &lastContinuationToken,
+		}
+		resp, err := s3client.ListBuckets(context.TODO(), &listBucketsInput)
+		if err != nil {
+			return fmt.Errorf("couldn't list buckets: %w", err)
+		}
+		nbRequest++
+		nbBuckets += len(resp.Buckets)
+
+		// for each bucket in the pagination result,
+		// print objects.
+		for _, bucket := range resp.Buckets {
+			err = ListObjectsInBucket(s3client, *bucket.Name)
+			// if we fail to list objects from one bucket,
+			// let's continue
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
+		// continue fetching buckets
+		if resp.ContinuationToken == nil {
+			moreBuckets = false
+			break
+		}
+		lastContinuationToken = *resp.ContinuationToken
+	}
+
+	if nbRequest == 1 && nbBuckets == 0 {
+		fmt.Println("No bucket owned.")
 	}
 	return nil
 }

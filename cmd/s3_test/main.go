@@ -39,7 +39,8 @@ func main() {
 	fmt.Println("This program can perfom S3 operations on your account. Possible actions:")
 	fmt.Println("1- List all buckets")
 	fmt.Println("2- List the content of a bucket")
-	fmt.Println("3- Exit program")
+	fmt.Println("3- List all objects in S3")
+	fmt.Println("4- Exit program")
 
 	// ask user which operation they want to perform
 	for {
@@ -64,6 +65,11 @@ func main() {
 				log.Println(err)
 			}
 		case "3":
+			err = s3buckets.ListAllObjects(s3client)
+			if err != nil {
+				log.Println(err)
+			}
+		case "4":
 			return
 		default:
 			fmt.Print("Invalid output, please answer a number between 1 and 6.")
