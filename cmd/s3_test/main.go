@@ -56,10 +56,13 @@ func main() {
 		case "1":
 			err = s3buckets.ListBuckets(s3client)
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
 			}
 		case "2":
-			listContentBucket(s3client)
+			err = listContentBucket(s3client)
+			if err != nil {
+				log.Println(err)
+			}
 		case "3":
 			return
 		default:

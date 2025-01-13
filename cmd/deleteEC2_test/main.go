@@ -127,7 +127,6 @@ func main() {
 			instanceIDs, err := deleteEC2.FindAllInstanceID(ec2client, true)
 			if err != nil {
 				log.Println(err)
-				continue
 			}
 			if len(instanceIDs) == 0 {
 				fmt.Println("No instance found.")
@@ -136,25 +135,21 @@ func main() {
 			err = PrintByName(ec2client)
 			if err != nil {
 				log.Println(err)
-				continue
 			}
 		case "3":
 			err = DeleteByInstanceIDs(ec2client)
 			if err != nil {
 				log.Println(err)
-				continue
 			}
 		case "4":
 			err = DeleteByName(ec2client)
 			if err != nil {
 				log.Println(err)
-				continue
 			}
 		case "5":
 			err = deleteEC2.DeleteAllInstances(ec2client)
 			if err != nil {
 				log.Println(err)
-				continue
 			}
 		case "6":
 			return

@@ -8,13 +8,21 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-// afficher les buckets
 // afficher le contenu des buckets
 // uploader un fichier
 // downloader un fichier
 // supprimer un fichier
 // uploader un dossier ?
 // downloader un dossier
+// proposer de créer un bucket mais pour ça il faut gérer la nomenclature compliqué d'amazon S3
+
+// Returns true if the bucket exists, false otherwise.
+func BucketExists(s3client *s3.Client, bucketName string) bool {
+	// use the HeadBucket method to see if bucket exists and is accessible
+	headBucketInput := s3.HeadBucketInput{Bucket: &bucketName}
+	_, err := s3client.HeadBucket(context.TODO(), &headBucketInput)
+	return err == nil
+}
 
 // Print all generate purpose buckets owned on the account.
 func ListBuckets(s3client *s3.Client) error {
@@ -62,18 +70,23 @@ func ListBuckets(s3client *s3.Client) error {
 
 // Print all objects contained in a bucket.
 func ListObjectsInBucket(s3client *s3.Client, bucketName string) error {
+	// check first if bucket exists
+	bucketExists := BucketExists(s3client, bucketName)
+	if !bucketExists {
+		return fmt.Errorf("bucket \"%s\" doesn't exist", bucketName)
+	}
 	fmt.Printf("%s:\n", bucketName)
-	
+
 	// ListObjectsV2 can return at maximum 1000 results.
 	// We use the paginator to make all the necessary list object request
 	// to retrieve all the objects from the bucket
 	params := &s3.ListObjectsV2Input{
-		Bucket:  &bucketName,
+		Bucket: &bucketName,
 	}
 
 	listObjectsPaginator := s3.NewListObjectsV2Paginator(s3client, params)
 	nbRequest := 0
-	nbObjects:=0
+	nbObjects := 0
 
 	for listObjectsPaginator.HasMorePages() {
 		// Makes listObjectsV2 request with pagination
@@ -82,7 +95,7 @@ func ListObjectsInBucket(s3client *s3.Client, bucketName string) error {
 			return fmt.Errorf("failed to list all objects from bucket %s: %w", bucketName, err)
 		}
 		nbRequest++
-		nbObjects+=len(page.Contents)
+		nbObjects += len(page.Contents)
 
 		// Print objects
 		for _, object := range page.Contents {
@@ -91,7 +104,7 @@ func ListObjectsInBucket(s3client *s3.Client, bucketName string) error {
 	}
 
 	if nbRequest == 1 && nbObjects == 0 {
-		fmt.Println(" empty")
+		fmt.Println(" (empty)")
 	}
 	return nil
 }
